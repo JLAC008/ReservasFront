@@ -53,13 +53,13 @@ import { AuthService } from '../../services/auth.service';
           <h3>Cuentas de Prueba:</h3>
           <div class="demo-account">
             <strong>Administrador:</strong><br>
-            Email: admin&#64;deportes.com<br>
-            Contraseña: 123456
+            Email: walacapps&#64;gmail.com<br>
+            Contraseña: WalacMasoki13.
           </div>
           <div class="demo-account">
             <strong>Usuario:</strong><br>
-            Email: usuario&#64;email.com<br>
-            Contraseña: 123456
+            Email: walacapps&#64;gmail.com<br>
+            Contraseña: WalacMasoki13.
           </div>
         </div>
       </div>
@@ -186,11 +186,19 @@ export class LoginComponent {
 
   constructor(private authService: AuthService) {}
 
-  login(): void {
-    if (this.authService.login(this.email, this.password)) {
-      this.errorMessage = '';
-    } else {
-      this.errorMessage = 'Email o contraseña incorrectos';
+  async login(): Promise<void> {
+    this.errorMessage = '';
+    try {
+      const success = await this.authService.login(this.email, this.password);
+      if (!success) {
+        this.errorMessage = 'Email o contraseña incorrectos';
+      } else {
+        // Aquí puedes agregar redirección si quieres
+        // Ejemplo: this.router.navigate(['/dashboard']);
+      }
+    } catch (error) {
+      this.errorMessage = 'Error inesperado, intenta nuevamente';
+      console.error(error);
     }
   }
 }

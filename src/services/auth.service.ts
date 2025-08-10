@@ -1,39 +1,64 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
+import { createClient, SupabaseClient, User as SupabaseUser } from '@supabase/supabase-js';
 import { User } from '../models/interfaces';
+import { environment } from '../enviroments/enviroment/enviroment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
+  private supabase: SupabaseClient;
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
 
-  private users: User[] = [
-    { id: '1', email: 'admin@deportes.com', name: 'Administrador', role: 'admin' },
-    { id: '2', email: 'usuario@email.com', name: 'Juan Pérez', role: 'user' },
-    { id: '3', email: 'maria@email.com', name: 'María García', role: 'user' }
-  ];
-
   constructor() {
+    this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
+    this.loadUserFromSession();
+
+    this.supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        this.setCurrentUser(session.user);
+      } else {
+        this.currentUserSubject.next(null);
+        localStorage.removeItem('currentUser');
+      }
+    });
+  }
+
+  private setCurrentUser(supabaseUser: SupabaseUser) {
+    const user: User = {
+      id: supabaseUser.id,
+      email: supabaseUser.email ?? '',
+      name: supabaseUser.user_metadata?.['full_name'] ?? '',
+      role: 'user'
+    };
+    this.currentUserSubject.next(user);
+    localStorage.setItem('currentUser', JSON.stringify(user));
+  }
+
+  private loadUserFromSession() {
     const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {
       this.currentUserSubject.next(JSON.parse(savedUser));
     }
   }
 
-  login(email: string, password: string): boolean {
-    // Simulación de login - en producción esto sería una llamada API
-    const user = this.users.find(u => u.email === email);
-    if (user && password === '123456') {
-      this.currentUserSubject.next(user);
-      localStorage.setItem('currentUser', JSON.stringify(user));
+  async login(email: string, password: string): Promise<boolean> {
+    const { data, error } = await this.supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      console.error('Error en login:', error.message);
+      return false;
+    }
+    if (data.user) {
+      this.setCurrentUser(data.user);
       return true;
     }
     return false;
   }
 
-  logout(): void {
+  async logout(): Promise<void> {
+    await this.supabase.auth.signOut();
     this.currentUserSubject.next(null);
     localStorage.removeItem('currentUser');
   }
