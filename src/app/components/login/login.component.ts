@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-login',
@@ -14,7 +15,7 @@ import { AuthService } from '../../services/auth.service';
           <h1>🏟️ SportCourt</h1>
           <p>Sistema de Reservas Deportivas</p>
         </div>
-        
+
         <form (ngSubmit)="login()" class="login-form">
           <div class="form-group">
             <label for="email">Email</label>
@@ -27,7 +28,7 @@ import { AuthService } from '../../services/auth.service';
               required
             />
           </div>
-          
+
           <div class="form-group">
             <label for="password">Contraseña</label>
             <input
@@ -39,16 +40,16 @@ import { AuthService } from '../../services/auth.service';
               required
             />
           </div>
-          
+
           <button type="submit" class="login-btn" [disabled]="!email || !password">
             Iniciar Sesión
           </button>
-          
+
           <div class="error-message" *ngIf="errorMessage">
             {{ errorMessage }}
           </div>
         </form>
-        
+
         <div class="demo-accounts">
           <h3>Cuentas de Prueba:</h3>
           <div class="demo-account">
@@ -184,7 +185,7 @@ export class LoginComponent {
   password = '';
   errorMessage = '';
 
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService, private router: Router) {}
 
   async login(): Promise<void> {
     this.errorMessage = '';
@@ -193,8 +194,12 @@ export class LoginComponent {
       if (!success) {
         this.errorMessage = 'Email o contraseña incorrectos';
       } else {
-        // Aquí puedes agregar redirección si quieres
-        // Ejemplo: this.router.navigate(['/dashboard']);
+        // Redirige según el rol (por ahora role viene de metadata como 'user' por defecto)
+        if (this.authService.isAdmin()) {
+          this.router.navigate(['/admin']);
+        } else {
+          this.router.navigate(['/user']);
+        }
       }
     } catch (error) {
       this.errorMessage = 'Error inesperado, intenta nuevamente';
