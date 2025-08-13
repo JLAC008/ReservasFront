@@ -45,6 +45,11 @@ import {AuthService} from '../../services/auth.service';
             Iniciar Sesión
           </button>
 
+          <button type="button" class="login-btn google-btn" (click)="loginWithGoogle()">
+            Iniciar sesión con Google
+          </button>
+
+
           <div class="signup-hint">
             ¿No tienes cuenta?
             <a [routerLink]="['/register']" class="signup-link">Regístrate</a>
@@ -200,6 +205,15 @@ import {AuthService} from '../../services/auth.service';
       font-size: 0.75rem;
       line-height: 1.4;
     }
+
+    .google-btn {
+      background: #db4437;
+    }
+
+    .google-btn:hover {
+      background: #c23321;
+    }
+
   `]
 })
 export class LoginComponent {
@@ -222,6 +236,16 @@ export class LoginComponent {
     console.error(error);
   }
 }
+
+async loginWithGoogle(): Promise<void> {
+  try {
+    await this.authService.loginWithGoogle();
+  } catch (error) {
+    this.errorMessage = 'Error al iniciar sesión con Google';
+    console.error(error);
+  }
+}
+
 
 
 }

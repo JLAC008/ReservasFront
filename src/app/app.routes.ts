@@ -5,12 +5,15 @@ import { AdminDashboardComponent } from './components/admin-dashboard/admin-dash
 import { authGuard } from './guards/auth.guard';
 import { adminGuard } from './guards/admin.guard';
 import { RegisterComponent } from './components/register/register.component';
+import {AuthCallbackComponent} from "./components/auth/auth-callback.component";
  
  
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
+
+  { path: 'auth/callback', component: AuthCallbackComponent },
   
   {
     path: 'user',
