@@ -118,6 +118,48 @@ async isAdmin(): Promise<boolean> {
   return perfil?.rol.toUpperCase() === UserRole.ADMIN;
 }
 
+async signUp(fullName: string, email: string, password: string): Promise<{ user: User | null; needsConfirmation: boolean }> {
+  const { data, error } = await this.supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { full_name: fullName }
+    }
+  });
+
+  if (error) {
+    console.error('Error en registro:', error.message);
+    throw error;
+  }
+
+  if (data.user) {
+    try {
+      await this.supabase.from('perfiles').insert({ id: data.user.id, rol: 'user' });
+    } catch (e) {
+      console.error('Error creando perfil:', e);
+    }
+
+    const needsConfirmation = !data.session;
+    let user: User | null = null;
+
+    if (data.session) {
+      this.setCurrentUser(data.user);
+      const userWithRole: User = {
+        id: data.user.id,
+        email: data.user.email ?? '',
+        name: data.user.user_metadata?.['full_name'] ?? fullName,
+        role: 'user',
+      };
+      this.currentUserSubject.next(userWithRole);
+      localStorage.setItem('currentUser', JSON.stringify(userWithRole));
+      user = userWithRole;
+    }
+
+    return { user, needsConfirmation };
+  }
+
+  return { user: null, needsConfirmation: true };
+}
 
   isAuthenticated(): boolean {
     return this.getCurrentUser() !== null;

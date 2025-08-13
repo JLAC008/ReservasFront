@@ -1,11 +1,11 @@
 import {Component} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
-import {RouterLink} from '@angular/router';
+import {Router, RouterLink} from '@angular/router';
 import {AuthService} from '../../services/auth.service';
 
 @Component({
-  selector: 'app-login',
+  selector: 'app-register',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   template: `
@@ -13,61 +13,74 @@ import {AuthService} from '../../services/auth.service';
       <div class="login-card">
         <div class="login-header">
           <h1>🏟️ SportCourt</h1>
-          <p>Sistema de Reservas Deportivas</p>
+          <p>Crea tu cuenta</p>
         </div>
 
-        <form (ngSubmit)="login()" class="login-form">
+        <form (ngSubmit)="register()" class="login-form">
+          <div class="form-group">
+            <label for="name">Nombre completo</label>
+            <input
+              type="text"
+              id="name"
+              [(ngModel)]="name"
+              name="name"
+              placeholder="Tu nombre"
+              required
+            />
+          </div>
+
           <div class="form-group">
             <label for="email">Email</label>
             <input
-                type="email"
-                id="email"
-                [(ngModel)]="email"
-                name="email"
-                placeholder="tu@email.com"
-                required
+              type="email"
+              id="email"
+              [(ngModel)]="email"
+              name="email"
+              placeholder="tu@email.com"
+              required
             />
           </div>
 
           <div class="form-group">
             <label for="password">Contraseña</label>
             <input
-                type="password"
-                id="password"
-                [(ngModel)]="password"
-                name="password"
-                placeholder="••••••••"
-                required
+              type="password"
+              id="password"
+              [(ngModel)]="password"
+              name="password"
+              placeholder="••••••••"
+              required
             />
           </div>
 
-          <button type="submit" class="login-btn" [disabled]="!email || !password">
-            Iniciar Sesión
-          </button>
-
-          <div class="signup-hint">
-            ¿No tienes cuenta?
-            <a [routerLink]="['/register']" class="signup-link">Regístrate</a>
+          <div class="form-group">
+            <label for="confirmPassword">Confirmar contraseña</label>
+            <input
+              type="password"
+              id="confirmPassword"
+              [(ngModel)]="confirmPassword"
+              name="confirmPassword"
+              placeholder="••••••••"
+              required
+            />
           </div>
+
+          <button type="submit" class="login-btn" [disabled]="!name || !email || !password || !confirmPassword || loading">
+            Crear cuenta
+          </button>
 
           <div class="error-message" *ngIf="errorMessage">
             {{ errorMessage }}
           </div>
-        </form>
+          <div class="success-message" *ngIf="successMessage">
+            {{ successMessage }}
+          </div>
 
-        <div class="demo-accounts">
-          <h3>Cuentas de Prueba:</h3>
-          <div class="demo-account">
-            <strong>Administrador:</strong><br>
-            Email: walacapps&#64;gmail.com<br>
-            Contraseña: WalacMasoki13.
+          <div class="signup-hint">
+            ¿Ya tienes cuenta?
+            <a [routerLink]="['/login']" class="signup-link">Inicia sesión</a>
           </div>
-          <div class="demo-account">
-            <strong>Usuario:</strong><br>
-            Email: alejandrofmayor98&#64;gmail.com<br>
-            Contraseña: Geoymunicipal123
-          </div>
-        </div>
+        </form>
       </div>
     </div>
   `,
@@ -108,7 +121,7 @@ import {AuthService} from '../../services/auth.service';
     }
 
     .form-group {
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.25rem;
     }
 
     .form-group label {
@@ -163,6 +176,13 @@ import {AuthService} from '../../services/auth.service';
       font-size: 0.875rem;
     }
 
+    .success-message {
+      color: #10b981;
+      text-align: center;
+      margin-top: 0.75rem;
+      font-size: 0.875rem;
+    }
+
     .signup-hint {
       text-align: center;
       margin-top: 0.75rem;
@@ -179,49 +199,44 @@ import {AuthService} from '../../services/auth.service';
     .signup-hint .signup-link:hover {
       text-decoration: underline;
     }
-
-    .demo-accounts {
-      margin-top: 2rem;
-      padding-top: 2rem;
-      border-top: 1px solid #e5e7eb;
-    }
-
-    .demo-accounts h3 {
-      margin: 0 0 1rem 0;
-      color: #1f2937;
-      font-size: 1rem;
-    }
-
-    .demo-account {
-      background: #f9fafb;
-      padding: 0.75rem;
-      border-radius: 6px;
-      margin-bottom: 0.75rem;
-      font-size: 0.75rem;
-      line-height: 1.4;
-    }
   `]
 })
-export class LoginComponent {
+export class RegisterComponent {
+  name = '';
   email = '';
   password = '';
+  confirmPassword = '';
   errorMessage = '';
+  successMessage = '';
+  loading = false;
 
-  constructor(private readonly authService: AuthService) {
-  }
+  constructor(
+    private readonly authService: AuthService,
+    private readonly router: Router
+  ) {}
 
-  async login(): Promise<void> {
-  this.errorMessage = '';
-  try {
-    const user = await this.authService.loginWithRole(this.email, this.password);
-    if (!user) {
-      this.errorMessage = 'Email o contraseña incorrectos';
+  async register(): Promise<void> {
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    if (this.password !== this.confirmPassword) {
+      this.errorMessage = 'Las contraseñas no coinciden';
+      return;
     }
-  } catch (error) {
-    this.errorMessage = 'Error inesperado, intenta nuevamente';
-    console.error(error);
+
+    this.loading = true;
+    try {
+      const result = await this.authService.signUp(this.name, this.email, this.password);
+      if (result.needsConfirmation) {
+        this.successMessage = 'Registro exitoso. Revisa tu correo para confirmar tu cuenta.';
+      } else if (result.user) {
+        await this.router.navigate(['/user']);
+      }
+    } catch (e) {
+      console.error(e);
+      this.errorMessage = 'No se pudo completar el registro. Intenta nuevamente.';
+    } finally {
+      this.loading = false;
+    }
   }
-}
-
-
 }
