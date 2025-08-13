@@ -1,8 +1,7 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { AuthService } from '../../services/auth.service';
-import { Router } from '@angular/router';
+import {Component} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {AuthService} from '../../services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -20,24 +19,24 @@ import { Router } from '@angular/router';
           <div class="form-group">
             <label for="email">Email</label>
             <input
-              type="email"
-              id="email"
-              [(ngModel)]="email"
-              name="email"
-              placeholder="tu@email.com"
-              required
+                type="email"
+                id="email"
+                [(ngModel)]="email"
+                name="email"
+                placeholder="tu@email.com"
+                required
             />
           </div>
 
           <div class="form-group">
             <label for="password">Contraseña</label>
             <input
-              type="password"
-              id="password"
-              [(ngModel)]="password"
-              name="password"
-              placeholder="••••••••"
-              required
+                type="password"
+                id="password"
+                [(ngModel)]="password"
+                name="password"
+                placeholder="••••••••"
+                required
             />
           </div>
 
@@ -59,8 +58,8 @@ import { Router } from '@angular/router';
           </div>
           <div class="demo-account">
             <strong>Usuario:</strong><br>
-            Email: walacapps&#64;gmail.com<br>
-            Contraseña: WalacMasoki13.
+            Email: alejandrofmayor98&#64;gmail.com<br>
+            Contraseña: Geoymunicipal123
           </div>
         </div>
       </div>
@@ -185,25 +184,21 @@ export class LoginComponent {
   password = '';
   errorMessage = '';
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(private readonly authService: AuthService) {
+  }
 
   async login(): Promise<void> {
-    this.errorMessage = '';
-    try {
-      const success = await this.authService.login(this.email, this.password);
-      if (!success) {
-        this.errorMessage = 'Email o contraseña incorrectos';
-      } else {
-        // Redirige según el rol (por ahora role viene de metadata como 'user' por defecto)
-        if (this.authService.isAdmin()) {
-          this.router.navigate(['/admin']);
-        } else {
-          this.router.navigate(['/user']);
-        }
-      }
-    } catch (error) {
-      this.errorMessage = 'Error inesperado, intenta nuevamente';
-      console.error(error);
+  this.errorMessage = '';
+  try {
+    const user = await this.authService.loginWithRole(this.email, this.password);
+    if (!user) {
+      this.errorMessage = 'Email o contraseña incorrectos';
     }
+  } catch (error) {
+    this.errorMessage = 'Error inesperado, intenta nuevamente';
+    console.error(error);
   }
+}
+
+
 }
