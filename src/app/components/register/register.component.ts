@@ -219,22 +219,36 @@ export class RegisterComponent {
     this.errorMessage = '';
     this.successMessage = '';
 
-    if (this.password !== this.confirmPassword) {
+    const name = this.name.trim();
+    const email = this.email.trim().toLowerCase();
+    const password = this.password;
+
+    if (!name || !email || !password || !this.confirmPassword) {
+      this.errorMessage = 'Completa todos los campos';
+      return;
+    }
+
+    if (password.length < 6) {
+      this.errorMessage = 'La contraseña debe tener al menos 6 caracteres';
+      return;
+    }
+
+    if (password !== this.confirmPassword) {
       this.errorMessage = 'Las contraseñas no coinciden';
       return;
     }
 
     this.loading = true;
     try {
-      const result = await this.authService.signUp(this.name, this.email, this.password);
+      const result = await this.authService.signUp(name, email, password);
       if (result.needsConfirmation) {
         this.successMessage = 'Registro exitoso. Revisa tu correo para confirmar tu cuenta.';
       } else if (result.user) {
         await this.router.navigate(['/user']);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      this.errorMessage = 'No se pudo completar el registro. Intenta nuevamente.';
+      this.errorMessage = e?.message ?? 'No se pudo completar el registro. Intenta nuevamente.';
     } finally {
       this.loading = false;
     }
