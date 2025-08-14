@@ -45,9 +45,11 @@ import {AuthService} from '../../services/auth.service';
             Iniciar Sesión
           </button>
 
-          <button type="button" class="login-btn google-btn" (click)="loginWithGoogle()">
-            Iniciar sesión con Google
+          <button class="google-btn" (click)="loginWithGoogle()">
+            <img src="assets/google-icon-logo.webp" alt="Google" class="google-icon"/>
+            <span>Continuar con Google</span>
           </button>
+
 
 
           <div class="signup-hint">
@@ -207,12 +209,37 @@ import {AuthService} from '../../services/auth.service';
     }
 
     .google-btn {
-      background: #db4437;
-    }
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db; /* gris claro */
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827; /* texto gris oscuro */
+  cursor: pointer;
+  width: 100%;
+  max-width: 320px;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
 
-    .google-btn:hover {
-      background: #c23321;
-    }
+.google-btn:hover {
+  background-color: #f9fafb;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.google-btn:active {
+  background-color: #f3f4f6;
+}
+
+.google-icon {
+  width: 18px;
+  height: 18px;
+}
+
 
   `]
 })
