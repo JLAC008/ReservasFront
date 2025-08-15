@@ -5,12 +5,16 @@ import { AdminDashboardComponent } from './components/admin-dashboard/admin-dash
 import { authGuard } from './guards/auth.guard';
 import { adminGuard } from './guards/admin.guard';
 import { RegisterComponent } from './components/register/register.component';
+import { RegisterChoiceComponent } from './components/register-choice/register-choice.component';
+import { RegisterEmpresaComponent } from './components/register-empresa/register-empresa.component';
  
  
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
   { path: 'login', component: LoginComponent },
-  { path: 'register', component: RegisterComponent },
+  { path: 'register', component: RegisterChoiceComponent },
+  { path: 'register/usuario', component: RegisterComponent },
+  { path: 'register/empresa', component: RegisterEmpresaComponent },
   
   {
     path: 'user',
