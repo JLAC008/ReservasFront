@@ -64,7 +64,7 @@ private async fetchUserProfile(userId: string) {
   const { data: perfil, error } = await this.supabase
     .from('perfiles')
     .select('rol')
-    .eq('id', userId)
+    .eq('identificacion', userId)
     .single();
   if (error) {
     console.error('Error fetching perfil:', error);
@@ -82,7 +82,24 @@ async loginWithRole(email: string, password: string): Promise<User | null> {
 
   this.setCurrentUser(data.user);
 
-  const perfil = await this.fetchUserProfile(data.user.id);
+  let perfil = await this.fetchUserProfile(data.user.id);
+  if (!perfil) {
+    // Crear perfil por primera vez tras login (ahora sí hay sesión y RLS lo permite)
+    const fullName = data.user.user_metadata?.['full_name'] ?? '';
+    const [nombre, ...apellidosParts] = fullName.trim().split(/\s+/);
+    const apellidos = apellidosParts.join(' ').trim();
+    try {
+      await this.supabase.from('perfiles').insert({
+        identificacion: data.user.id,
+        nombre,
+        apellidos,
+        rol: 'CLIENTE'
+      });
+      perfil = await this.fetchUserProfile(data.user.id);
+    } catch (e) {
+      console.error('Error creando perfil tras login:', e);
+    }
+  }
   const role = perfil?.rol ?? 'user';
 
   const userWithRole: User = {
@@ -118,7 +135,7 @@ async isAdmin(): Promise<boolean> {
   return perfil?.rol.toUpperCase() === UserRole.ADMIN;
 }
 
-async signUp(fullName: string, email: string, password: string): Promise<{ user: User | null; needsConfirmation: boolean }> {
+async signUp(fullName: string, email: string, password: string): Promise<{ user: User | null; needsConfirmation: boolean; uid: string | null }> {
   const { data, error } = await this.supabase.auth.signUp({
     email,
     password,
@@ -132,13 +149,9 @@ async signUp(fullName: string, email: string, password: string): Promise<{ user:
     throw error;
   }
 
-  if (data.user) {
-    try {
-      await this.supabase.from('perfiles').insert({ id: data.user.id, rol: 'user' });
-    } catch (e) {
-      console.error('Error creando perfil:', e);
-    }
+  const uid: string | null = data.user?.id ?? null;
 
+  if (data.user) {
     const needsConfirmation = !data.session;
     let user: User | null = null;
 
@@ -155,10 +168,10 @@ async signUp(fullName: string, email: string, password: string): Promise<{ user:
       user = userWithRole;
     }
 
-    return { user, needsConfirmation };
+    return { user, needsConfirmation, uid };
   }
 
-  return { user: null, needsConfirmation: true };
+  return { user: null, needsConfirmation: true, uid: null };
 }
 
   isAuthenticated(): boolean {

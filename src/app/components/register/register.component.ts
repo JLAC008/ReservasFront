@@ -3,6 +3,8 @@ import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {Router, RouterLink} from '@angular/router';
 import {AuthService} from '../../services/auth.service';
+import {createClient, SupabaseClient} from '@supabase/supabase-js';
+import {environment} from '../../enviroments/enviroment/enviroment';
 
 @Component({
   selector: 'app-register',
@@ -18,13 +20,37 @@ import {AuthService} from '../../services/auth.service';
 
         <form (ngSubmit)="register()" class="login-form">
           <div class="form-group">
-            <label for="name">Nombre completo</label>
+            <label for="firstName">Nombre</label>
             <input
               type="text"
-              id="name"
-              [(ngModel)]="name"
-              name="name"
+              id="firstName"
+              [(ngModel)]="firstName"
+              name="firstName"
               placeholder="Tu nombre"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="lastName1">Primer apellido</label>
+            <input
+              type="text"
+              id="lastName1"
+              [(ngModel)]="lastName1"
+              name="lastName1"
+              placeholder="Tu primer apellido"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="lastName2">Segundo apellido</label>
+            <input
+              type="text"
+              id="lastName2"
+              [(ngModel)]="lastName2"
+              name="lastName2"
+              placeholder="Tu segundo apellido"
               required
             />
           </div>
@@ -65,7 +91,7 @@ import {AuthService} from '../../services/auth.service';
             />
           </div>
 
-          <button type="submit" class="login-btn" [disabled]="!name || !email || !password || !confirmPassword || loading">
+          <button type="submit" class="login-btn" [disabled]="!firstName || !lastName1 || !lastName2 || !email || !password || !confirmPassword || loading">
             Crear cuenta
           </button>
 
@@ -202,13 +228,20 @@ import {AuthService} from '../../services/auth.service';
   `]
 })
 export class RegisterComponent {
-  name = '';
+  firstName = '';
+  lastName1 = '';
+  lastName2 = '';
   email = '';
   password = '';
   confirmPassword = '';
   errorMessage = '';
   successMessage = '';
   loading = false;
+
+  private readonly supabase: SupabaseClient = createClient(
+    environment.supabaseUrl,
+    environment.supabaseKey
+  );
 
   constructor(
     private readonly authService: AuthService,
@@ -219,11 +252,14 @@ export class RegisterComponent {
     this.errorMessage = '';
     this.successMessage = '';
 
-    const name = this.name.trim();
+    const firstName = this.firstName.trim();
+    const lastName1 = this.lastName1.trim();
+    const lastName2 = this.lastName2.trim();
+    const fullName = `${firstName} ${lastName1} ${lastName2}`.replace(/\s+/g, ' ').trim();
     const email = this.email.trim().toLowerCase();
     const password = this.password;
 
-    if (!name || !email || !password || !this.confirmPassword) {
+    if (!firstName || !lastName1 || !lastName2 || !email || !password || !this.confirmPassword) {
       this.errorMessage = 'Completa todos los campos';
       return;
     }
@@ -240,7 +276,41 @@ export class RegisterComponent {
 
     this.loading = true;
     try {
-      const result = await this.authService.signUp(name, email, password);
+      const result = await this.authService.signUp(fullName, email, password);
+
+      // Obtener UID del nuevo usuario
+      let uid: string | null = result.uid ?? null;
+      if (!uid && result.user?.id) {
+        uid = result.user.id;
+      }
+      if (!uid) {
+        const { data: authData } = await this.supabase.auth.getUser();
+        uid = authData?.user?.id ?? null;
+      }
+      if (!uid) {
+        throw new Error('No se pudo obtener el identificador del usuario para crear su perfil.');
+      }
+
+      // Construir datos de perfil
+      const apellidos = `${lastName1} ${lastName2}`.replace(/\s+/g, ' ').trim();
+
+      // Insertar una fila en 'perfiles'
+      const { data: perfilData, error: perfilError } = await this.supabase
+        .from('perfiles')
+        .insert([
+          {
+            id: uid,
+            nombre: firstName,
+            apellidos: apellidos,
+            rol: 'CLIENT'
+          }
+        ])
+        .select();
+
+      if (perfilError) {
+        throw perfilError;
+      }
+
       if (result.needsConfirmation) {
         this.successMessage = 'Registro exitoso. Revisa tu correo para confirmar tu cuenta.';
       } else if (result.user) {
