@@ -6,7 +6,9 @@ import { authGuard } from './guards/auth.guard';
 import { adminGuard } from './guards/admin.guard';
 import { RegisterComponent } from './components/register/register.component';
 import {AuthCallbackComponent} from "./components/auth/auth-callback.component";
- 
+import { RegisterChoiceComponent } from './components/register-choice/register-choice.component';
+import { RegisterEmpresaComponent } from './components/register-empresa/register-empresa.component';
+
  
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
@@ -14,7 +16,10 @@ export const routes: Routes = [
   { path: 'register', component: RegisterComponent },
 
   { path: 'auth/callback', component: AuthCallbackComponent },
-  
+  { path: 'register', component: RegisterChoiceComponent },
+  { path: 'register/usuario', component: RegisterComponent },
+  { path: 'register/empresa', component: RegisterEmpresaComponent },
+
   {
     path: 'user',
     component: UserDashboardComponent,
