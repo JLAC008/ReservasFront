@@ -1,8 +1,8 @@
-import {Component} from '@angular/core';
-import {CommonModule} from '@angular/common';
-import {FormsModule} from '@angular/forms';
-import {RouterLink} from '@angular/router';
-import {AuthService} from '../../services/auth.service';
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -20,24 +20,24 @@ import {AuthService} from '../../services/auth.service';
           <div class="form-group">
             <label for="email">Email</label>
             <input
-                type="email"
-                id="email"
-                [(ngModel)]="email"
-                name="email"
-                placeholder="tu@email.com"
-                required
+              type="email"
+              id="email"
+              [(ngModel)]="email"
+              name="email"
+              placeholder="tu@email.com"
+              required
             />
           </div>
 
           <div class="form-group">
             <label for="password">Contraseña</label>
             <input
-                type="password"
-                id="password"
-                [(ngModel)]="password"
-                name="password"
-                placeholder="••••••••"
-                required
+              type="password"
+              id="password"
+              [(ngModel)]="password"
+              name="password"
+              placeholder="••••••••"
+              required
             />
           </div>
 
@@ -45,19 +45,17 @@ import {AuthService} from '../../services/auth.service';
             Iniciar Sesión
           </button>
 
-          <button class="google-btn" (click)="loginWithGoogle()">
+          <button type="button" class="google-btn" (click)="loginWithGoogle()">
             <img src="assets/google-icon-logo.webp" alt="Google" class="google-icon"/>
             <span>Continuar con Google</span>
           </button>
-
-
 
           <div class="signup-hint">
             ¿No tienes cuenta?
             <a [routerLink]="['/register']" class="signup-link">Regístrate</a>
           </div>
 
-          <div class="error-message" *ngIf="errorMessage">
+          <div *ngIf="errorMessage" class="error-message">
             {{ errorMessage }}
           </div>
         </form>
@@ -152,6 +150,7 @@ import {AuthService} from '../../services/auth.service';
       font-weight: 600;
       cursor: pointer;
       transition: background-color 0.2s;
+      margin-bottom: 0.75rem;
     }
 
     .login-btn:hover:not(:disabled) {
@@ -243,36 +242,42 @@ import {AuthService} from '../../services/auth.service';
 
   `]
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   email = '';
   password = '';
   errorMessage = '';
 
-  constructor(private readonly authService: AuthService) {
+  constructor(
+    private readonly authService: AuthService,
+    private readonly router: Router
+  ) {}
+
+  ngOnInit(): void {
+    this.errorMessage = '';
   }
 
   async login(): Promise<void> {
-  this.errorMessage = '';
-  try {
-    const user = await this.authService.loginWithRole(this.email, this.password);
-    if (!user) {
-      this.errorMessage = 'Email o contraseña incorrectos';
+    this.errorMessage = '';
+    try {
+      const user = await this.authService.loginWithRole(this.email, this.password);
+      if (!user) {
+        this.errorMessage = 'Email o contraseña incorrectos';
+      }
+      // 🔄 la redirección la maneja el AuthService
+    } catch (error) {
+      this.errorMessage = 'Error inesperado, intenta nuevamente';
+      console.error(error);
     }
-  } catch (error) {
-    this.errorMessage = 'Error inesperado, intenta nuevamente';
-    console.error(error);
   }
-}
 
-async loginWithGoogle(): Promise<void> {
-  try {
-    await this.authService.loginWithGoogle();
-  } catch (error) {
-    this.errorMessage = 'Error al iniciar sesión con Google';
-    console.error(error);
+  async loginWithGoogle(): Promise<void> {
+    this.errorMessage = '';
+    try {
+      await this.authService.loginWithGoogle();
+      // el callback redirigirá tras login con Google
+    } catch (error) {
+      this.errorMessage = 'Error al iniciar sesión con Google';
+      console.error(error);
+    }
   }
-}
-
-
-
 }

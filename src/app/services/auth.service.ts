@@ -3,8 +3,8 @@ import { BehaviorSubject } from 'rxjs';
 import { createClient, SupabaseClient, User as SupabaseUser } from '@supabase/supabase-js';
 import { User } from '../models/interfaces';
 import { environment } from '../enviroments/enviroment/enviroment';
-import { UserRole } from "../models/user-roles.enum";
-import { Router } from "@angular/router";
+import { UserRole } from '../models/user-roles.enum';
+import { Router } from '@angular/router';
 
 @Injectable({
   providedIn: 'root'
@@ -18,6 +18,7 @@ export class AuthService {
     this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
     this.loadUserFromSession();
 
+    // 🔄 Escucha cambios de sesión
     this.supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         this.setCurrentUser(session.user);
@@ -28,19 +29,19 @@ export class AuthService {
     });
   }
 
-  /** Guarda usuario básico en memoria y localStorage */
+  /** Guarda usuario en memoria y localStorage */
   private setCurrentUser(supabaseUser: SupabaseUser) {
     const user: User = {
       id: supabaseUser.id,
       email: supabaseUser.email ?? '',
       name: supabaseUser.user_metadata?.['full_name'] ?? '',
-      role: 'user'
+      role: UserRole.CLIENT // 🔹 por defecto si no se conoce
     };
     this.currentUserSubject.next(user);
     localStorage.setItem('currentUser', JSON.stringify(user));
   }
 
-  /** Carga usuario almacenado en sesión previa */
+  /** Cargar usuario almacenado en la sesión previa */
   private loadUserFromSession() {
     const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {
@@ -48,7 +49,7 @@ export class AuthService {
     }
   }
 
-  /** Cierra sesión y limpia almacenamiento */
+  /** Cierra sesión y limpia todo */
   async logout(): Promise<void> {
     await this.supabase.auth.signOut();
     this.currentUserSubject.next(null);
@@ -60,12 +61,12 @@ export class AuthService {
     return this.currentUserSubject.value;
   }
 
-  /** Obtiene perfil y rol del usuario */
+  /** Obtiene perfil con rol */
   private async fetchUserProfile(userId: string) {
     const { data: perfil, error } = await this.supabase
       .from('perfiles')
       .select('rol')
-      .eq('identificacion', userId)
+      .eq('id', userId)
       .single();
     if (error) {
       console.error('Error fetching perfil:', error);
@@ -74,31 +75,30 @@ export class AuthService {
     return perfil;
   }
 
-  /** Manejo centralizado post-login según rol */
+  /** Maneja login común entre email/Google */
   private async handleUserLogin(supabaseUser: SupabaseUser): Promise<User> {
     this.setCurrentUser(supabaseUser);
 
-  this.setCurrentUser(data.user);
-
-  let perfil = await this.fetchUserProfile(data.user.id);
-  if (!perfil) {
-    // Crear perfil por primera vez tras login (ahora sí hay sesión y RLS lo permite)
-    const fullName = data.user.user_metadata?.['full_name'] ?? '';
-    const [nombre, ...apellidosParts] = fullName.trim().split(/\s+/);
-    const apellidos = apellidosParts.join(' ').trim();
-    try {
-      await this.supabase.from('perfiles').insert({
-        identificacion: data.user.id,
-        nombre,
-        apellidos,
-        rol: 'CLIENTE'
-      });
-      perfil = await this.fetchUserProfile(data.user.id);
-    } catch (e) {
-      console.error('Error creando perfil tras login:', e);
+    let perfil = await this.fetchUserProfile(supabaseUser.id);
+    if (!perfil) {
+      // 🔹 Crear perfil si no existe
+      const fullName = supabaseUser.user_metadata?.['full_name'] ?? '';
+      const [nombre, ...apellidosParts] = fullName.trim().split(/\s+/);
+      const apellidos = apellidosParts.join(' ').trim();
+      try {
+        await this.supabase.from('perfiles').insert({
+          identificacion: supabaseUser.id,
+          nombre,
+          apellidos,
+          rol: UserRole.CLIENT
+        });
+        perfil = await this.fetchUserProfile(supabaseUser.id);
+      } catch (e) {
+        console.error('Error creando perfil tras login:', e);
+      }
     }
-  }
-  const role = perfil?.rol ?? 'user';
+
+    const role = (perfil?.rol as UserRole) ?? UserRole.CLIENT;
 
     const userWithRole: User = {
       id: supabaseUser.id,
@@ -110,7 +110,8 @@ export class AuthService {
     this.currentUserSubject.next(userWithRole);
     localStorage.setItem('currentUser', JSON.stringify(userWithRole));
 
-    if (userWithRole.role.toUpperCase() === UserRole.ADMIN) {
+    // 🔄 redirección según rol
+    if (userWithRole.role === UserRole.ADMIN) {
       await this.router.navigate(['/admin']);
     } else {
       await this.router.navigate(['/user']);
@@ -119,7 +120,7 @@ export class AuthService {
     return userWithRole;
   }
 
-  /** Login con email y contraseña */
+  /** Login normal con email y contraseña */
   async loginWithRole(email: string, password: string): Promise<User | null> {
     const { data, error } = await this.supabase.auth.signInWithPassword({ email, password });
     if (error || !data.user) {
@@ -129,27 +130,22 @@ export class AuthService {
     return await this.handleUserLogin(data.user);
   }
 
-  /** Verifica si el usuario actual es admin */
+  /** Verifica si el usuario actual es ADMIN */
   async isAdmin(): Promise<boolean> {
     const user = this.getCurrentUser();
     if (!user) return false;
-
-    if (user.role.toUpperCase() === UserRole.ADMIN) {
-      return true;
-    }
+    if (user.role === UserRole.ADMIN) return true;
 
     const perfil = await this.fetchUserProfile(user.id);
-    return perfil?.rol.toUpperCase() === UserRole.ADMIN;
+    return perfil?.rol?.toUpperCase() === UserRole.ADMIN;
   }
 
-  /** Registro de usuario */
+  /** Registro de usuario con email/contraseña */
   async signUp(fullName: string, email: string, password: string): Promise<{ user: User | null; needsConfirmation: boolean; uid: string | null }> {
     const { data, error } = await this.supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: { full_name: fullName }
-      }
+      options: { data: { full_name: fullName } }
     });
 
     if (error) {
@@ -159,8 +155,7 @@ export class AuthService {
 
     const uid: string | null = data.user?.id ?? null;
 
-        if (data.user) {
-
+    if (data.user) {
       const needsConfirmation = !data.session;
       let user: User | null = null;
 
@@ -174,13 +169,14 @@ export class AuthService {
     return { user: null, needsConfirmation: true, uid: null };
   }
 
+  /** Verifica si hay sesión activa */
   isAuthenticated(): boolean {
     return this.getCurrentUser() !== null;
   }
 
-  /** Inicia flujo de login con Google */
-  async loginWithGoogle(): Promise<void> {
-    const { error } = await this.supabase.auth.signInWithOAuth({
+  /** Login con Google */
+  async loginWithGoogle() {
+    const { data, error } = await this.supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: window.location.origin + '/auth/callback'
@@ -191,9 +187,10 @@ export class AuthService {
       console.error('Error en login con Google:', error.message);
       throw error;
     }
+    return data;
   }
 
-  /** Callback que se llama después de login con Google */
+  /** Callback después de login con Google */
   async handleGoogleCallback(): Promise<User | null> {
     const { data, error } = await this.supabase.auth.getSession();
     if (error || !data.session?.user) {

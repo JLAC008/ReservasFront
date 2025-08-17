@@ -1,8 +1,10 @@
+import {UserRole} from "./user-roles.enum";
+
 export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'user';
+  role: UserRole;
 }
 
 export interface Court {
