@@ -115,24 +115,33 @@ export class CourtsComponent implements OnInit {
     });
   }
 
-  private matchesDateFilter(courtDate: Date): boolean {
-    // Si no hay ningún filtro de fecha, mostrar todo
-    if (!this.currentDateInput.trim() && !this.selectedDate) {
-      return true;
-    }
-
-    // Si hay texto parcial, usar filtrado parcial
-    if (this.currentDateInput.trim()) {
-      return this.matchesPartialDate(courtDate, this.currentDateInput);
-    }
-
-    // Si hay fecha completa seleccionada, usar filtrado exacto
-    if (this.selectedDate) {
-      return courtDate.toDateString() === this.selectedDate.toDateString();
-    }
-
+private matchesDateFilter(courtDate: Date): boolean {
+  // Si no hay ningún filtro de fecha, mostrar todo
+  if (!this.currentDateInput.trim() && !this.selectedDate) {
     return true;
   }
+
+  // Filtrado parcial
+  if (this.currentDateInput.trim()) {
+    return this.matchesPartialDate(courtDate, this.currentDateInput);
+  }
+
+  // Filtrado exacto
+  if (this.selectedDate) {
+    // Convertir a Date si es string
+    const selected = (this.selectedDate instanceof Date)
+      ? this.selectedDate
+      : new Date(this.selectedDate);
+
+    // Verificar que sea una fecha válida
+    if (isNaN(selected.getTime())) return false;
+
+    return courtDate.toDateString() === selected.toDateString();
+  }
+
+  return true;
+}
+
 
   private matchesPartialDate(date: Date, filterText: string): boolean {
     // Formatear la fecha de la pista como dd/mm/yyyy
