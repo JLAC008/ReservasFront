@@ -2,7 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
-import { CourtsService } from '../../services/courts.service';
 import { BookingsService } from '../../services/bookings.service';
 import { Court, Booking, User, DaySchedule } from '../../models/interfaces';
 
@@ -508,7 +507,6 @@ export class UserDashboardComponent implements OnInit {
 
   constructor(
     private authService: AuthService,
-    private courtsService: CourtsService,
     private bookingsService: BookingsService
   ) {
     const today = new Date();
@@ -524,9 +522,6 @@ export class UserDashboardComponent implements OnInit {
       }
     });
 
-    this.courtsService.courts$.subscribe(courts => {
-      this.activeCourts = courts.filter(court => court.active);
-    });
 
     this.bookingsService.bookings$.subscribe(() => {
       if (this.currentUser) {

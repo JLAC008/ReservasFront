@@ -1,0 +1,90 @@
+<div class="min-h-screen bg-gray-100">
+  <!-- Header -->
+  <header class="bg-blue-600 text-white p-4">
+    <div class="container mx-auto">
+      <h1 class="text-2xl font-bold">SportFinder</h1>
+      <p class="text-sm">Encuentra y reserva pistas deportivas cerca de ti</p>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="container mx-auto p-4">
+    <!-- Filtros -->
+    <section class="bg-white rounded-lg shadow-md p-4 mb-6">
+      <h2 class="text-lg font-semibold mb-4 flex items-center">
+        <span class="material-icons mr-2">filter_list</span>
+        Filtros
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Fecha -->
+        <div class="flex flex-col">
+          <label class="mb-1 text-sm font-medium text-gray-700 flex items-center">
+            <span class="material-icons mr-1">calendar_today</span>
+            Fecha
+          </label>
+          <input
+              type="date"
+              [(ngModel)]="date"
+              class="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <!-- Deporte -->
+        <div class="flex flex-col">
+          <label class="mb-1 text-sm font-medium text-gray-700 flex items-center">
+            <span class="material-icons mr-1">sports_soccer</span>
+            Deporte
+          </label>
+          <p-select [options]="sportOptions" [(ngModel)]="sport" optionLabel="name"
+                    [filter]="true" filterBy="name" [showClear]="true"
+                    placeholder="Selecciona un Deporte" class="w-full md:w-56">
+            <ng-template #selectedItem let-selectedOption>
+            </ng-template>
+            <ng-template let-country #item>
+              <div class="flex items-center gap-2">
+                <img src="https://primefaces.org/cdn/primeng/images/demo/flag/flag_placeholder.png"
+                     [class]="'flag flag-' + country.code.toLowerCase()" style="width: 18px"/>
+                <div>{{ country.name }}</div>
+              </div>
+            </ng-template>
+          </p-select>
+        </div>
+
+        <!--        &lt;!&ndash; Ubicación &ndash;&gt;-->
+        <!--        <div class="flex flex-col">-->
+        <!--          <label class="mb-1 text-sm font-medium text-gray-700 flex items-center">-->
+        <!--            <span class="material-icons mr-1">location_on</span>-->
+        <!--            Ubicación-->
+        <!--          </label>-->
+        <!--          <app-searchable-select-->
+        <!--            [options]="locationOptions"-->
+        <!--            [(value)]="location"-->
+        <!--            placeholder="Seleccionar ubicación"-->
+        <!--          ></app-searchable-select>-->
+        <!--        </div>-->
+        <!--      </div>-->
+
+        <!--      <div class="mt-4 flex justify-end">-->
+        <!--        <button-->
+        <!--          class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"-->
+        <!--          (click)="handleFilter()"-->
+        <!--        >-->
+        <!--          Buscar-->
+        <!--        </button>-->
+              </div>
+    </section>
+
+    <!-- Resultados -->
+    <section>
+      <h2 class="text-xl font-semibold mb-4">Pistas disponibles</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <app-venue-card *ngFor="let venue of filteredVenues" [venue]="venue"></app-venue-card>
+      </div>
+
+      <div *ngIf="filteredVenues.length === 0" class="text-center py-10">
+        <p class="text-gray-500">No se encontraron pistas con los filtros seleccionados.</p>
+      </div>
+    </section>
+  </main>
+</div>

@@ -2,7 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
-import { CourtsService } from '../../services/courts.service';
 import { BookingsService } from '../../services/bookings.service';
 import { Court, Booking } from '../../models/interfaces';
 
@@ -45,53 +44,7 @@ import { Court, Booking } from '../../models/interfaces';
               {{ showAddCourtForm ? 'Cancelar' : '+ Nueva Pista' }}
             </button>
           </div>
-
-          <!-- Formulario Nueva Pista -->
-          <div *ngIf="showAddCourtForm" class="form-card">
-            <h3>{{ editingCourt ? 'Editar Pista' : 'Nueva Pista' }}</h3>
-            <form (ngSubmit)="saveCourt()" class="court-form">
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Nombre</label>
-                  <input [(ngModel)]="courtForm.name" name="name" required />
-                </div>
-                <div class="form-group">
-                  <label>Tipo</label>
-                  <select [(ngModel)]="courtForm.type" name="type" required>
-                    <option value="">Seleccionar</option>
-                    <option value="Tenis">Tenis</option>
-                    <option value="Pádel">Pádel</option>
-                    <option value="Fútbol">Fútbol</option>
-                    <option value="Básquet">Básquet</option>
-                    <option value="Squash">Squash</option>
-                  </select>
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Precio por Hora (€)</label>
-                  <input type="number" [(ngModel)]="courtForm.pricePerHour" name="price" required />
-                </div>
-                <div class="form-group">
-                  <label>Estado</label>
-                  <select [(ngModel)]="courtForm.active" name="active">
-                    <option [value]="true">Activa</option>
-                    <option [value]="false">Inactiva</option>
-                  </select>
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Descripción</label>
-                <textarea [(ngModel)]="courtForm.description" name="description" rows="3"></textarea>
-              </div>
-              <div class="form-actions">
-                <button type="button" (click)="cancelCourtForm()" class="secondary-btn">Cancelar</button>
-                <button type="submit" class="primary-btn">
-                  {{ editingCourt ? 'Actualizar' : 'Crear Pista' }}
-                </button>
-              </div>
-            </form>
-          </div>
+          
 
           <!-- Lista de Pistas -->
           <div class="courts-grid">
@@ -107,13 +60,7 @@ import { Court, Booking } from '../../models/interfaces';
                 <p><strong>Precio:</strong> {{ court.pricePerHour }}€/hora</p>
                 <p><strong>Descripción:</strong> {{ court.description }}</p>
               </div>
-              <div class="court-actions">
-                <button (click)="editCourt(court)" class="edit-btn">Editar</button>
-                <button (click)="deleteCourt(court.id)" class="delete-btn" 
-                        onclick="return confirm('¿Estás seguro de eliminar esta pista?')">
-                  Eliminar
-                </button>
-              </div>
+             
             </div>
           </div>
         </div>
@@ -523,7 +470,6 @@ export class AdminDashboardComponent implements OnInit {
 
   constructor(
     private authService: AuthService,
-    private courtsService: CourtsService,
     private bookingsService: BookingsService
   ) {}
 
@@ -532,10 +478,6 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   loadData(): void {
-    this.courtsService.courts$.subscribe(courts => {
-      this.courts = courts;
-    });
-
     this.bookingsService.bookings$.subscribe(bookings => {
       this.allBookings = bookings.sort((a, b) => 
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -555,42 +497,6 @@ export class AdminDashboardComponent implements OnInit {
     return this.confirmedBookings.reduce((sum, booking) => sum + booking.totalPrice, 0);
   }
 
-  saveCourt(): void {
-    if (this.editingCourt) {
-      this.courtsService.updateCourt(this.editingCourt.id, this.courtForm);
-    } else {
-      this.courtsService.addCourt(this.courtForm);
-    }
-    this.cancelCourtForm();
-  }
-
-  editCourt(court: Court): void {
-    this.editingCourt = court;
-    this.courtForm = {
-      name: court.name,
-      type: court.type,
-      pricePerHour: court.pricePerHour,
-      description: court.description,
-      active: court.active
-    };
-    this.showAddCourtForm = true;
-  }
-
-  deleteCourt(courtId: string): void {
-    this.courtsService.deleteCourt(courtId);
-  }
-
-  cancelCourtForm(): void {
-    this.showAddCourtForm = false;
-    this.editingCourt = null;
-    this.courtForm = {
-      name: '',
-      type: '',
-      pricePerHour: 0,
-      description: '',
-      active: true
-    };
-  }
 
   cancelBooking(bookingId: string): void {
     this.bookingsService.cancelBooking(bookingId);
